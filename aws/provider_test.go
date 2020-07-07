@@ -23,21 +23,21 @@ import (
 const rfc3339RegexPattern = `^[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?([Zz]|([+-]([01][0-9]|2[0-3]):[0-5][0-9]))$`
 const uuidRegexPattern = `[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[ab89][a-f0-9]{3}-[a-f0-9]{12}`
 
-var testAccProviders map[string]terraform.ResourceProvider
-var testAccProviderFactories func(providers *[]*schema.Provider) map[string]terraform.ResourceProviderFactory
+var testAccProviders map[string]*schema.Provider
+var testAccProviderFactories func(providers *[]*schema.Provider) map[string]func() (*schema.Provider, error)
 var testAccProvider *schema.Provider
 var testAccProviderFunc func() *schema.Provider
 
 func init() {
-	testAccProvider = Provider().(*schema.Provider)
-	testAccProviders = map[string]terraform.ResourceProvider{
+	testAccProvider = Provider()
+	testAccProviders = map[string]*schema.Provider{
 		"aws": testAccProvider,
 	}
-	testAccProviderFactories = func(providers *[]*schema.Provider) map[string]terraform.ResourceProviderFactory {
-		return map[string]terraform.ResourceProviderFactory{
-			"aws": func() (terraform.ResourceProvider, error) {
+	testAccProviderFactories = func(providers *[]*schema.Provider) map[string]func() (*schema.Provider, error) {
+		return map[string]func() (*schema.Provider, error){
+			"aws": func() (*schema.Provider, error) {
 				p := Provider()
-				*providers = append(*providers, p.(*schema.Provider))
+				*providers = append(*providers, p)
 				return p, nil
 			},
 		}
@@ -46,13 +46,13 @@ func init() {
 }
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func TestProvider_impl(t *testing.T) {
-	var _ terraform.ResourceProvider = Provider()
+	var _ *schema.Provider = Provider()
 }
 
 func testAccPreCheck(t *testing.T) {
