@@ -2,6 +2,7 @@ package aws
 
 import (
 	"bytes"
+	"context"
 	"log"
 
 	"encoding/json"
@@ -33,7 +34,7 @@ func resourceAwsEMRCluster() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+		CustomizeDiff: func(_ context.Context, diff *schema.ResourceDiff, v interface{}) error {
 			if diff.HasChange("instance_group") {
 				o, n := diff.GetChange("instance_group")
 				oSet := o.(*schema.Set).List()
