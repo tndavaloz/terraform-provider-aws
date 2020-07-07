@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"log"
@@ -42,7 +43,7 @@ func resourceAwsSnsPlatformApplication() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 
-		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+		CustomizeDiff: func(_ context.Context, diff *schema.ResourceDiff, v interface{}) error {
 			return validateAwsSnsPlatformApplication(diff)
 		},
 
