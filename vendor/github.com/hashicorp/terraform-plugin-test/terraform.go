@@ -98,7 +98,7 @@ func (wd *WorkingDir) getTerraformEnv() []string {
 	// they are visible to the person running the test. Currently though,
 	// Terraform CLI is able to send logs only to either an on-disk file or
 	// to stderr.
-	env = append(env, "TF_LOG=") // so logging can't pollute our stderr output
+	//env = append(env, "TF_LOG=") // so logging can't pollute our stderr output
 	env = append(env, "TF_INPUT=0")
 
 	// don't propagate the magic cookie
