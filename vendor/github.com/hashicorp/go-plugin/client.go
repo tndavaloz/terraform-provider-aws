@@ -12,6 +12,7 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -22,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	hclog "github.com/hashicorp/go-hclog"
 )
 
@@ -495,6 +497,8 @@ func (c *Client) Start() (addr net.Addr, err error) {
 			return nil, ErrSecureConfigAndReattach
 		}
 	}
+
+	log.Printf("[DEBUG] paws_debug: go-plugin got config %s", spew.Sdump(c.config))
 
 	if c.config.Reattach != nil {
 		return c.reattach()
