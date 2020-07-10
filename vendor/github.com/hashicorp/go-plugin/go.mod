@@ -3,6 +3,7 @@ module github.com/hashicorp/go-plugin
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.0
 	github.com/golang/protobuf v1.3.4
 	github.com/hashicorp/go-hclog v0.0.0-20180709165350-ff2cf002a8dd
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb
