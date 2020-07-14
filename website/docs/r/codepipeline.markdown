@@ -10,11 +10,83 @@ description: |-
 
 Provides a CodePipeline.
 
-~> **NOTE on `aws_codepipeline`:** - the `GITHUB_TOKEN` environment variable must be set if the GitHub provider is specified.
-
 ## Example Usage
 
 ```hcl
+resource "aws_codepipeline" "codepipeline" {
+  name     = "tf-test-pipeline"
+  role_arn = "${aws_iam_role.codepipeline_role.arn}"
+
+  artifact_store {
+    location = "${aws_s3_bucket.codepipeline_bucket.bucket}"
+    type     = "S3"
+
+    encryption_key {
+      id   = "${data.aws_kms_alias.s3kmskey.arn}"
+      type = "KMS"
+    }
+  }
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "GitHub"
+      version          = "1"
+      output_artifacts = ["source_output"]
+
+      configuration = {
+        Owner      = "my-organization"
+        Repo       = "test"
+        Branch     = "master"
+        OAuthToken = var.github_token
+      }
+    }
+  }
+
+  stage {
+    name = "Build"
+
+    action {
+      name             = "Build"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["source_output"]
+      output_artifacts = ["build_output"]
+      version          = "1"
+
+      configuration = {
+        ProjectName = "test"
+      }
+    }
+  }
+
+  stage {
+    name = "Deploy"
+
+    action {
+      name            = "Deploy"
+      category        = "Deploy"
+      owner           = "AWS"
+      provider        = "CloudFormation"
+      input_artifacts = ["build_output"]
+      version         = "1"
+
+      configuration = {
+        ActionMode     = "REPLACE_ON_FAILURE"
+        Capabilities   = "CAPABILITY_AUTO_EXPAND,CAPABILITY_IAM"
+        OutputFileName = "CreateStackOutput.json"
+        StackName      = "MyStack"
+        TemplatePath   = "build_output::sam-templated.yaml"
+      }
+    }
+  }
+}
+
 resource "aws_s3_bucket" "codepipeline_bucket" {
   bucket = "test-bucket"
   acl    = "private"
@@ -76,79 +148,6 @@ EOF
 data "aws_kms_alias" "s3kmskey" {
   name = "alias/myKmsKey"
 }
-
-resource "aws_codepipeline" "codepipeline" {
-  name     = "tf-test-pipeline"
-  role_arn = "${aws_iam_role.codepipeline_role.arn}"
-
-  artifact_store {
-    location = "${aws_s3_bucket.codepipeline_bucket.bucket}"
-    type     = "S3"
-
-    encryption_key {
-      id   = "${data.aws_kms_alias.s3kmskey.arn}"
-      type = "KMS"
-    }
-  }
-
-  stage {
-    name = "Source"
-
-    action {
-      name             = "Source"
-      category         = "Source"
-      owner            = "ThirdParty"
-      provider         = "GitHub"
-      version          = "1"
-      output_artifacts = ["source_output"]
-
-      configuration = {
-        Owner  = "my-organization"
-        Repo   = "test"
-        Branch = "master"
-      }
-    }
-  }
-
-  stage {
-    name = "Build"
-
-    action {
-      name             = "Build"
-      category         = "Build"
-      owner            = "AWS"
-      provider         = "CodeBuild"
-      input_artifacts  = ["source_output"]
-      output_artifacts = ["build_output"]
-      version          = "1"
-
-      configuration = {
-        ProjectName = "test"
-      }
-    }
-  }
-
-  stage {
-    name = "Deploy"
-
-    action {
-      name            = "Deploy"
-      category        = "Deploy"
-      owner           = "AWS"
-      provider        = "CloudFormation"
-      input_artifacts = ["build_output"]
-      version         = "1"
-
-      configuration = {
-        ActionMode     = "REPLACE_ON_FAILURE"
-        Capabilities   = "CAPABILITY_AUTO_EXPAND,CAPABILITY_IAM"
-        OutputFileName = "CreateStackOutput.json"
-        StackName      = "MyStack"
-        TemplatePath   = "build_output::sam-templated.yaml"
-      }
-    }
-  }
-}
 ```
 
 ## Argument Reference
@@ -186,7 +185,7 @@ An `action` block supports the following arguments:
 * `name` - (Required) The action declaration's name.
 * `provider` - (Required) The provider of the service being called by the action. Valid providers are determined by the action category. For example, an action in the Deploy category type might have a provider of AWS CodeDeploy, which would be specified as CodeDeploy.
 * `version` - (Required) A string that identifies the action type.
-* `configuration` - (Optional) A Map of the action declaration's configuration. Find out more about configuring action configurations in the [Reference Pipeline Structure documentation](http://docs.aws.amazon.com/codepipeline/latest/userguide/reference-pipeline-structure.html#action-requirements).
+* `configuration` - (Optional) A map of the action declaration's configuration. Configurations options for action types and providers can be found in the [Pipeline Structure Reference](http://docs.aws.amazon.com/codepipeline/latest/userguide/reference-pipeline-structure.html#action-requirements) and [Action Structure Reference](https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference.html) documentation.
 * `input_artifacts` - (Optional) A list of artifact names to be worked on.
 * `output_artifacts` - (Optional) A list of artifact names to output. Output artifact names must be unique within a pipeline.
 * `role_arn` - (Optional) The ARN of the IAM service role that will perform the declared action. This is assumed through the roleArn for the pipeline.
