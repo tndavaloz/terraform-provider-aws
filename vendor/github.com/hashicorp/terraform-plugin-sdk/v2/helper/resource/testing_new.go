@@ -115,7 +115,11 @@ func runNewTest(t testing.T, c TestCase, providers map[string]*schema.Provider, 
 }
 
 func getState(t testing.T, wd *tftest.WorkingDir) *terraform.State {
-	jsonState := wd.RequireState(t)
+	var jsonState *tfjson.Sate
+	runProviderCommand(func() error {
+		jsonState := wd.RequireState(t)
+		return nil
+	}, wd, defaultPluginServeOpts(wd, providers))
 	state, err := shimStateFromJson(jsonState)
 	if err != nil {
 		t.Fatal(err)
