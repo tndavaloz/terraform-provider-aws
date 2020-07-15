@@ -149,9 +149,9 @@ func (p *Provider) InternalValidate() error {
 	}
 
 	// Warn of deprecations
-	if p.ConfigureFunc != nil && p.ConfigureContextFunc == nil {
-		log.Printf("[WARN] ConfigureFunc is deprecated, please use ConfigureContextFunc")
-	}
+	// if p.ConfigureFunc != nil && p.ConfigureContextFunc == nil {
+	// 	log.Printf("[WARN] ConfigureFunc is deprecated, please use ConfigureContextFunc")
+	// }
 
 	return validationErrors
 }

@@ -866,9 +866,9 @@ func (m schemaMap) internalValidate(topSchemaMap schemaMap, attrsOnly bool) erro
 		}
 
 		// Warn of deprecations
-		if v.ValidateFunc != nil && v.ValidateDiagFunc == nil {
-			log.Printf("[WARN] ValidateFunc is deprecated, please use ValidateDiagFunc")
-		}
+		// if v.ValidateFunc != nil && v.ValidateDiagFunc == nil {
+		// 	log.Printf("[WARN] ValidateFunc is deprecated, please use ValidateDiagFunc")
+		// }
 
 	}
 
