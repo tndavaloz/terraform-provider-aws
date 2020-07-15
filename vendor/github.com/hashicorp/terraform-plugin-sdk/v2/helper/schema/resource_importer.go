@@ -60,9 +60,6 @@ func (r *ResourceImporter) InternalValidate() error {
 	if r.State != nil && r.StateContext != nil {
 		return errors.New("Both State and StateContext cannot be set.")
 	}
-	// if r.State != nil && r.StateContext == nil {
-	// 	log.Printf("[WARN] State is deprecated, please use StateContext")
-	// }
 	return nil
 }
 
@@ -71,7 +68,6 @@ func (r *ResourceImporter) InternalValidate() error {
 //
 // Deprecated: Please use the context aware ImportStatePassthroughContext instead
 func ImportStatePassthrough(d *ResourceData, m interface{}) ([]*ResourceData, error) {
-	// log.Printf("[WARN] ImportStatePassthrough is deprecated, please use ImportStatePassthroughContext")
 	return []*ResourceData{d}, nil
 }
 

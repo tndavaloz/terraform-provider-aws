@@ -65,7 +65,6 @@ func RetryContext(ctx context.Context, timeout time.Duration, f RetryFunc) error
 //
 // Deprecated: Please use RetryContext to ensure proper plugin shutdown
 func Retry(timeout time.Duration, f RetryFunc) error {
-	// log.Printf("[WARN] Retry is deprecated, please use RetryContext")
 	return RetryContext(context.Background(), timeout, f)
 }
 
