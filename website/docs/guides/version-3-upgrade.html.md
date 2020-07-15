@@ -25,6 +25,7 @@ Upgrade topics:
 - [Resource: aws_acm_certificate](#resource-aws_acm_certificate)
 - [Resource: aws_api_gateway_method_settings](#resource-aws_api_gateway_method_settings)
 - [Resource: aws_autoscaling_group](#resource-aws_autoscaling_group)
+- [Resource: aws_codepipeline](#resource-aws_codepipeline)
 - [Resource: aws_dx_gateway](#resource-aws_dx_gateway)
 - [Resource: aws_elastic_transcoder_preset](#resource-aws_elastic_transcoder_preset)
 - [Resource: aws_emr_cluster](#resource-aws_emr_cluster)
@@ -240,6 +241,77 @@ resource "aws_autoscaling_group" "example"{
 }
 ```
 
+## Resource: aws_codepipeline
+
+### GITHUB_TOKEN environment variable removal
+
+Switch your Terraform configuration to the `OAuthToken` element in the `action` `configuration` map instead.
+
+For example, given this previous configuration:
+
+```bash
+$ GITHUB_TOKEN=<token> terraform apply
+```
+
+```hcl
+resource "aws_codepipeline" "example" {
+  # ... other configuration ...
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "GitHub"
+      version          = "1"
+      output_artifacts = ["example"]
+
+      configuration = {
+        Owner  = "lifesum-terraform"
+        Repo   = "example"
+        Branch = "main"
+      }
+    }
+  }
+}
+```
+
+An updated configuration:
+
+```bash
+$ TF_VAR_github_token=<token> terraform apply
+```
+
+```hcl
+variable "github_token" {}
+
+resource "aws_codepipeline" "example" {
+  # ... other configuration ...
+
+  stage {
+    name = "Source"
+
+    action {
+      name             = "Source"
+      category         = "Source"
+      owner            = "ThirdParty"
+      provider         = "GitHub"
+      version          = "1"
+      output_artifacts = ["example"]
+
+      configuration = {
+        Owner      = "lifesum-terraform"
+        Repo       = "example"
+        Branch     = "main"
+        OAuthToken = var.github_token
+      }
+    }
+  }
+}
+```
+
 ## Resource: aws_dx_gateway
 
 ### Removal of Automatic aws_dx_gateway_association Import
@@ -319,8 +391,8 @@ resource "aws_emr_cluster" "example" {
   # ... other configuration ...
 
   instance_group {
-    instance_role  = "MASTER"
-    instance_type  = "m4.large"
+    instance_role = "MASTER"
+    instance_type = "m4.large"
   }
 
   instance_group {
