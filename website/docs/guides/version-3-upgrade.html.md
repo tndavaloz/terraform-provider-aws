@@ -26,6 +26,7 @@ Upgrade topics:
 - [Resource: aws_dx_gateway](#resource-aws_dx_gateway)
 - [Resource: aws_elastic_transcoder_preset](#resource-aws_elastic_transcoder_preset)
 - [Resource: aws_emr_cluster](#resource-aws_emr_cluster)
+- [Resource: aws_iam_server_certificate](#resource-aws_iam_server_certificate)
 - [Resource: aws_lb_listener_rule](#resource-aws_lb_listener_rule)
 - [Resource: aws_msk_cluster](#resource-aws_msk_cluster)
 - [Resource: aws_s3_bucket](#resource-aws_s3_bucket)
@@ -369,6 +370,12 @@ resource "aws_emr_cluster" "example" {
   }
 }
 ```
+
+## Resource: aws_iam_server_certificate
+
+### certificate_body, certificate_chain, and private_key Arguments No Longer Stored as Hash
+
+Previously when the `certificate_body`, `certificate_chain`, and `private_key` arguments were stored in state, they were stored as a hash of the actual value. This hashing has been removed for new or recreated resources to prevent lifecycle issues.
 
 ## Resource: aws_lb_listener_rule
 
