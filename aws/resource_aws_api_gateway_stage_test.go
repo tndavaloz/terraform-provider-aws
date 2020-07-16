@@ -107,6 +107,7 @@ func TestAccAWSAPIGatewayStage_disappears_ReferencingDeployment(t *testing.T) {
 func TestAccAWSAPIGatewayStage_accessLogSettings(t *testing.T) {
 	var conf apigateway.Stage
 	rName := acctest.RandString(5)
+	cloudwatchLogGroupResourceName := "aws_cloudwatch_log_group.test"
 	resourceName := "aws_api_gateway_stage.test"
 	clf := `$context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId`
 	json := `{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user", "requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod", "resourcePath":"$context.resourcePath", "status":"$context.status", "protocol":"$context.protocol", "responseLength":"$context.responseLength" }`
@@ -124,7 +125,7 @@ func TestAccAWSAPIGatewayStage_accessLogSettings(t *testing.T) {
 					testAccCheckAWSAPIGatewayStageExists(resourceName, &conf),
 					testAccMatchResourceAttrRegionalARNNoAccount(resourceName, "arn", "apigateway", regexp.MustCompile(`/restapis/.+/stages/prod`)),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.#", "1"),
-					testAccMatchResourceAttrRegionalARN(resourceName, "access_log_settings.0.destination_arn", "logs", regexp.MustCompile(fmt.Sprintf("log-group:foo-bar-%s$", rName))),
+					resource.TestCheckResourceAttrPair(resourceName, "access_log_settings.0.destination_arn", cloudwatchLogGroupResourceName, "arn"),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.0.format", clf),
 				),
 			},
@@ -135,7 +136,7 @@ func TestAccAWSAPIGatewayStage_accessLogSettings(t *testing.T) {
 					testAccCheckAWSAPIGatewayStageExists(resourceName, &conf),
 					testAccMatchResourceAttrRegionalARNNoAccount(resourceName, "arn", "apigateway", regexp.MustCompile(`/restapis/.+/stages/prod`)),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.#", "1"),
-					testAccMatchResourceAttrRegionalARN(resourceName, "access_log_settings.0.destination_arn", "logs", regexp.MustCompile(fmt.Sprintf("log-group:foo-bar-%s$", rName))),
+					resource.TestCheckResourceAttrPair(resourceName, "access_log_settings.0.destination_arn", cloudwatchLogGroupResourceName, "arn"),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.0.format", json),
 				),
 			},
@@ -145,7 +146,7 @@ func TestAccAWSAPIGatewayStage_accessLogSettings(t *testing.T) {
 					testAccCheckAWSAPIGatewayStageExists(resourceName, &conf),
 					testAccMatchResourceAttrRegionalARNNoAccount(resourceName, "arn", "apigateway", regexp.MustCompile(`/restapis/.+/stages/prod`)),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.#", "1"),
-					testAccMatchResourceAttrRegionalARN(resourceName, "access_log_settings.0.destination_arn", "logs", regexp.MustCompile(fmt.Sprintf("log-group:foo-bar-%s$", rName))),
+					resource.TestCheckResourceAttrPair(resourceName, "access_log_settings.0.destination_arn", cloudwatchLogGroupResourceName, "arn"),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.0.format", xml),
 				),
 			},
@@ -155,7 +156,7 @@ func TestAccAWSAPIGatewayStage_accessLogSettings(t *testing.T) {
 					testAccCheckAWSAPIGatewayStageExists(resourceName, &conf),
 					testAccMatchResourceAttrRegionalARNNoAccount(resourceName, "arn", "apigateway", regexp.MustCompile(`/restapis/.+/stages/prod`)),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.#", "1"),
-					testAccMatchResourceAttrRegionalARN(resourceName, "access_log_settings.0.destination_arn", "logs", regexp.MustCompile(fmt.Sprintf("log-group:foo-bar-%s$", rName))),
+					resource.TestCheckResourceAttrPair(resourceName, "access_log_settings.0.destination_arn", cloudwatchLogGroupResourceName, "arn"),
 					resource.TestCheckResourceAttr(resourceName, "access_log_settings.0.format", csv),
 				),
 			},
