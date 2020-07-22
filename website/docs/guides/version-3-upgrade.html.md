@@ -386,6 +386,32 @@ resource "aws_emr_cluster" "example" {
 }
 ```
 
+## Resource: aws_iam_instance_profile
+
+### roles Argument Removal
+
+Switch your Terraform configuration to the `role` argument instead.
+
+For example, given this previous configuration:
+
+```hcl
+resource "aws_iam_instance_profile" "example" {
+  # ... other configuration ...
+
+  roles = [aws_iam_role.example.id]
+}
+```
+
+An updated configuration:
+
+```hcl
+resource "aws_iam_instance_profile" "example" {
+  # ... other configuration ...
+
+  role = aws_iam_role.example.id
+}
+```
+
 ## Resource: aws_lambda_alias
 
 ### Import No Longer Converts Function Name to ARN
