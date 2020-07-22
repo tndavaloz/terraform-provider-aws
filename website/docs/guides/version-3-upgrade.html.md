@@ -28,6 +28,7 @@ Upgrade topics:
 - [Resource: aws_dx_gateway](#resource-aws_dx_gateway)
 - [Resource: aws_elastic_transcoder_preset](#resource-aws_elastic_transcoder_preset)
 - [Resource: aws_emr_cluster](#resource-aws_emr_cluster)
+- [Resource: aws_glue_job](#resource-aws_glue_job)
 - [Resource: aws_lambda_alias](#resource-aws_lambda_alias)
 - [Resource: aws_launch_template](#resource-aws_launch_template)
 - [Resource: aws_lb_listener_rule](#resource-aws_lb_listener_rule)
@@ -383,6 +384,32 @@ resource "aws_emr_cluster" "example" {
   master_instance_group {
     instance_type = "m4.large"
   }
+}
+```
+
+## Resource: aws_glue_job
+
+### allocated_capacity Argument Removal
+
+The Glue API has deprecated the `allocated_capacity` argument. Switch your Terraform configuration to the `max_capacity` argument instead.
+
+For example, given this previous configuration:
+
+```hcl
+resource "aws_glue_job" "example" {
+  # ... other configuration ...
+
+  allocated_capacity = 2
+}
+```
+
+An updated configuration:
+
+```hcl
+resource "aws_glue_job" "example" {
+  # ... other configuration ...
+
+  max_capacity = 2
 }
 ```
 
