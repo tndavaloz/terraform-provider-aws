@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -18,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/internal/diagutils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -441,10 +439,6 @@ type TestStep struct {
 	// fields that can't be refreshed and don't matter.
 	ImportStateVerify       bool
 	ImportStateVerifyIgnore []string
-
-	// provider s is used internally to maintain a reference to the
-	// underlying providers during the tests
-	providers map[string]*schema.Provider
 }
 
 // ParallelTest performs an acceptance test on a resource, allowing concurrency
@@ -454,6 +448,7 @@ type TestStep struct {
 // tests to occur against the same resource or service (e.g. random naming).
 // All other requirements of the Test function also apply to this function.
 func ParallelTest(t testing.T, c TestCase) {
+	t.Helper()
 	t.Parallel()
 	Test(t, c)
 }
@@ -469,6 +464,8 @@ func ParallelTest(t testing.T, c TestCase) {
 // long, we require the verbose flag so users are able to see progress
 // output.
 func Test(t testing.T, c TestCase) {
+	t.Helper()
+
 	// We only run acceptance tests if an env var is set because they're
 	// slow and generally require some outside configuration. You can opt out
 	// of this with OverrideEnvVar on individual TestCases.
@@ -481,32 +478,18 @@ func Test(t testing.T, c TestCase) {
 
 	logging.SetOutput()
 
-	// get instances of all providers, so we can use the individual
-	// resources to shim the state during the tests.
-	providers := make(map[string]*schema.Provider)
-	var provider string
-	for name, pf := range c.ProviderFactories {
-		p, err := pf()
-		if err != nil {
-			t.Fatal(err)
-		}
-		providers[name] = p
-		provider = name
-	}
-	for name, p := range c.Providers {
-		providers[name] = p
-		provider = name
-	}
+	if len(c.Providers) > 0 {
+		c.ProviderFactories = map[string]func() (*schema.Provider, error){}
 
-	// if len(providers) != 1 {
-	// 	t.Fatalf("Only the provider under test should be set in TestCase, got %d providers. Other providers can be used by adding their provider blocks to their config; they will automatically be downloaded as part of terraform init.", len(providers))
-	// }
-
-	// Auto-configure all providers.
-	for _, p := range providers {
-		diags := p.Configure(context.Background(), terraform.NewResourceConfigRaw(nil))
-		if diags.HasError() {
-			t.Fatal("error configuring provider: %s", diagutils.ErrorDiags(diags))
+		t.Log("TestCase.Providers id deprecated, please use ProviderFactories")
+		for name, p := range c.Providers {
+			if _, ok := c.ProviderFactories[name]; ok {
+				t.Fatalf("ProviderFactory for %q already exists, cannot overwrite with Provider", name)
+			}
+			prov := p
+			c.ProviderFactories[name] = func() (*schema.Provider, error) {
+				return prov, nil
+			}
 		}
 	}
 
@@ -521,7 +504,7 @@ func Test(t testing.T, c TestCase) {
 	if err != nil {
 		t.Fatalf("Error getting working dir: %s", err)
 	}
-	helper := tftest.AutoInitProviderHelper(provider, sourceDir)
+	helper := tftest.AutoInitProviderHelper(sourceDir)
 	defer func(helper *tftest.Helper) {
 		err := helper.Close()
 		if err != nil {
@@ -529,7 +512,7 @@ func Test(t testing.T, c TestCase) {
 		}
 	}(helper)
 
-	runNewTest(t, c, providers, helper)
+	runNewTest(t, c, helper)
 }
 
 // testProviderConfig takes the list of Providers in a TestCase and returns a
@@ -548,6 +531,8 @@ func testProviderConfig(c TestCase) string {
 // normal unit test suite. This should only be used for resource that don't
 // have any external dependencies.
 func UnitTest(t testing.T, c TestCase) {
+	t.Helper()
+
 	c.IsUnitTest = true
 	Test(t, c)
 }
