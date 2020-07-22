@@ -962,33 +962,39 @@ func TestAccAWSInstance_ipv6_supportAddressCountWithIpv4(t *testing.T) {
 	})
 }
 
-var providerFactories = map[string]func() (*schema.Provider, error){
-	"aws": func() (*schema.Provider, error) {
-		return Provider(), nil
-	},
-	"aws2": func() (*schema.Provider, error) {
-		return Provider(), nil
-	},
-}
-
 func TestAccAWSInstance_multipleRegions(t *testing.T) {
-	//var v ec2.Instance
-	//resourceName := "aws_instance.test"
+	var v ec2.Instance
+	resourceName := "aws_instance.test"
 
 	// record the initialized providers so that we can use them to
 	// check for the instances in each region
-	//var providers []*schema.Provider
+	var providers []*schema.Provider
+
+	// when the plugin is initialized push the initialized/configured instance
+	// into the slice
+	var providerFactories = map[string]func() (*schema.Provider, error){
+		"aws": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+		"aws2": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		//CheckDestroy:      testAccCheckWithProviders(testAccCheckInstanceDestroyWithProvider, &providers),
+		CheckDestroy:      testAccCheckWithProviders(testAccCheckInstanceDestroyWithProvider, &providers),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccInstanceConfigMultipleRegions,
-				Check:  resource.ComposeTestCheckFunc(
-				// testAccCheckInstanceExistsWithProvider(resourceName, &v, testAccAwsRegionProviderFunc("us-west-2", &providers)),
-				// testAccCheckInstanceExistsWithProvider("aws_instance.test2", &v, testAccAwsRegionProviderFunc("us-east-1", &providers)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckInstanceExistsWithProvider(resourceName, &v, testAccAwsRegionProviderFunc("us-west-2", &providers)),
+					testAccCheckInstanceExistsWithProvider("aws_instance.test2", &v, testAccAwsRegionProviderFunc("us-east-1", &providers)),
 				),
 			},
 		},
