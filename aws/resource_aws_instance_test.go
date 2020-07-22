@@ -972,12 +972,12 @@ var providerFactories = map[string]func() (*schema.Provider, error){
 }
 
 func TestAccAWSInstance_multipleRegions(t *testing.T) {
-	var v ec2.Instance
-	resourceName := "aws_instance.test"
+	//var v ec2.Instance
+	//resourceName := "aws_instance.test"
 
 	// record the initialized providers so that we can use them to
 	// check for the instances in each region
-	var providers []*schema.Provider
+	//var providers []*schema.Provider
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
