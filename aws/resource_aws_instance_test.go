@@ -977,15 +977,15 @@ func TestAccAWSInstance_multipleRegions(t *testing.T) {
 
 	// when the plugin is initialized push the initialized/configured instance
 	// into the slice
-	var providerFactories = map[string]func() (*schema.Provider, error){
-		"awseast": func() (*schema.Provider, error) {
+	var providerFactories = map[string]terraform.ResourceProviderFactory{
+		"awseast": func() (terraform.ResourceProvider, error) {
 			p := Provider()
-			providers = append(providers, p)
+			providers = append(providers, p.(*schema.Provider))
 			return p, nil
 		},
-		"awswest": func() (*schema.Provider, error) {
+		"awswest": func() (terraform.ResourceProvider, error) {
 			p := Provider()
-			providers = append(providers, p)
+			providers = append(providers, p.(*schema.Provider))
 			return p, nil
 		},
 	}
