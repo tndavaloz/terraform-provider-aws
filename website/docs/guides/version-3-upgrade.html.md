@@ -237,9 +237,9 @@ resource "aws_autoscaling_group" "example"{
 
 ### Removal of arn Wildcard Suffix
 
-Previously the resource returned the Amazon Resource Name (ARN) directly from the API, which included a `:*` suffix to denote all CloudWatch Log Streams under the CloudWatch Log Group. This is inconsistent with most other AWS resources that return ARNs and many other AWS services do not accept this additional suffix. The suffix is now automatically removed. For example, when the attribute would previously return an ARN such as `arn:aws:logs:us-east-1:123456789012:log-group:/example:*`, the attribute now will returns the ARN as `arn:aws:logs:us-east-1:123456789012:log-group:/example`.
+Previously, the resource returned the Amazon Resource Name (ARN) directly from the API, which included a `:*` suffix to denote all CloudWatch Log Streams under the CloudWatch Log Group. Most other AWS resources that return ARNs and many other AWS services do not use the `:*` suffix. The suffix is now automatically removed. For example, the resource previously returned an ARN such as `arn:aws:logs:us-east-1:123456789012:log-group:/example:*` but will now return `arn:aws:logs:us-east-1:123456789012:log-group:/example`.
 
-Workarounds such as `replace()` usage like the below can be removed:
+Workarounds, such as using `replace()` as shown below, should be removed:
 
 ```hcl
 resource "aws_cloudwatch_log_group" "example" {
@@ -253,7 +253,7 @@ resource "aws_datasync_task" "example" {
 }
 ```
 
-To keep the existing behavior with configuration references that should include the wildcard suffix, string interpolation can be used. For example, given this previous configuration:
+Removing the `:*` suffix is a breaking change for some configurations. Fix these configurations using string interpolations as demonstrated below. For example, this configuration is now broken:
 
 ```hcl
 data "aws_iam_policy_document" "ad-log-policy" {
