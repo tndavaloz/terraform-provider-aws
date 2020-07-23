@@ -975,9 +975,24 @@ func TestAccAWSInstance_multipleRegions(t *testing.T) {
 	// check for the instances in each region
 	var providers []*schema.Provider
 
+	// when the plugin is initialized push the initialized/configured instance
+	// into the slice
+	var providerFactories = map[string]func() (*schema.Provider, error){
+		"awseast": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+		"awswest": func() (*schema.Provider, error) {
+			p := Provider()
+			providers = append(providers, p)
+			return p, nil
+		},
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: testAccProviderFactories(&providers),
+		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckWithProviders(testAccCheckInstanceDestroyWithProvider, &providers),
 		Steps: []resource.TestStep{
 			{
@@ -3813,25 +3828,23 @@ resource "aws_instance" "test" {
 }
 
 const testAccInstanceConfigMultipleRegions = `
-provider "aws" {
-	alias = "west"
+provider "awswest" {
 	region = "us-west-2"
 }
 
-provider "aws" {
-	alias = "east"
+provider "awseast" {
 	region = "us-east-1"
 }
 resource "aws_instance" "test" {
 	# us-west-2
-	provider = "aws.west"
+	provider = "awswest"
 	ami = "ami-4fccb37f"
 	instance_type = "m1.small"
 }
 
 resource "aws_instance" "test2" {
 	# us-east-1
-	provider = "aws.east"
+	provider = "awseast"
 	ami = "ami-8c6ea9e4"
 	instance_type = "m1.small"
 }
