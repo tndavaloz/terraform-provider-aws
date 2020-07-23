@@ -3782,6 +3782,9 @@ type Build struct {
 	// The current build phase.
 	CurrentPhase *string `locationName:"currentPhase" type:"string"`
 
+	// Contains information about the debug session for this build.
+	DebugSession *DebugSession `locationName:"debugSession" type:"structure"`
+
 	// The AWS Key Management Service (AWS KMS) customer master key (CMK) to be
 	// used for encrypting the build output artifacts.
 	//
@@ -3954,6 +3957,12 @@ func (s *Build) SetCache(v *ProjectCache) *Build {
 // SetCurrentPhase sets the CurrentPhase field's value.
 func (s *Build) SetCurrentPhase(v string) *Build {
 	s.CurrentPhase = &v
+	return s
+}
+
+// SetDebugSession sets the DebugSession field's value.
+func (s *Build) SetDebugSession(v *DebugSession) *Build {
+	s.DebugSession = v
 	return s
 }
 
@@ -4319,6 +4328,66 @@ func (s *BuildPhase) SetPhaseType(v string) *BuildPhase {
 // SetStartTime sets the StartTime field's value.
 func (s *BuildPhase) SetStartTime(v time.Time) *BuildPhase {
 	s.StartTime = &v
+	return s
+}
+
+// Contains information that defines how the AWS CodeBuild build project reports
+// the build status to the source provider.
+type BuildStatusConfig struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies the context of the build status CodeBuild sends to the source provider.
+	// The usage of this parameter depends on the source provider.
+	//
+	// Bitbucket
+	//
+	// This parameter is used for the name parameter in the Bitbucket commit status.
+	// For more information, see build (https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Bworkspace%7D/%7Brepo_slug%7D/commit/%7Bnode%7D/statuses/build)
+	// in the Bitbucket API documentation.
+	//
+	// GitHub/GitHub Enterprise Server
+	//
+	// This parameter is used for the context parameter in the GitHub commit status.
+	// For more information, see Create a commit status (https://developer.github.com/v3/repos/statuses/#create-a-commit-status)
+	// in the GitHub developer guide.
+	Context *string `locationName:"context" type:"string"`
+
+	// Specifies the target url of the build status CodeBuild sends to the source
+	// provider. The usage of this parameter depends on the source provider.
+	//
+	// Bitbucket
+	//
+	// This parameter is used for the url parameter in the Bitbucket commit status.
+	// For more information, see build (https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Bworkspace%7D/%7Brepo_slug%7D/commit/%7Bnode%7D/statuses/build)
+	// in the Bitbucket API documentation.
+	//
+	// GitHub/GitHub Enterprise Server
+	//
+	// This parameter is used for the target_url parameter in the GitHub commit
+	// status. For more information, see Create a commit status (https://developer.github.com/v3/repos/statuses/#create-a-commit-status)
+	// in the GitHub developer guide.
+	TargetUrl *string `locationName:"targetUrl" type:"string"`
+}
+
+// String returns the string representation
+func (s BuildStatusConfig) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s BuildStatusConfig) GoString() string {
+	return s.String()
+}
+
+// SetContext sets the Context field's value.
+func (s *BuildStatusConfig) SetContext(v string) *BuildStatusConfig {
+	s.Context = &v
+	return s
+}
+
+// SetTargetUrl sets the TargetUrl field's value.
+func (s *BuildStatusConfig) SetTargetUrl(v string) *BuildStatusConfig {
+	s.TargetUrl = &v
 	return s
 }
 
@@ -4969,6 +5038,42 @@ func (s CreateWebhookOutput) GoString() string {
 // SetWebhook sets the Webhook field's value.
 func (s *CreateWebhookOutput) SetWebhook(v *Webhook) *CreateWebhookOutput {
 	s.Webhook = v
+	return s
+}
+
+// Contains information about the debug session for a build. For more information,
+// see Viewing a running build in Session Manager (https://docs.aws.amazon.com/codebuild/latest/userguide/session-manager.html).
+type DebugSession struct {
+	_ struct{} `type:"structure"`
+
+	// Specifies if session debugging is enabled for this build.
+	SessionEnabled *bool `locationName:"sessionEnabled" type:"boolean"`
+
+	// Contains the identifier of the Session Manager session used for the build.
+	// To work with the paused build, you open this session to examine, control,
+	// and resume the build.
+	SessionTarget *string `locationName:"sessionTarget" min:"1" type:"string"`
+}
+
+// String returns the string representation
+func (s DebugSession) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s DebugSession) GoString() string {
+	return s.String()
+}
+
+// SetSessionEnabled sets the SessionEnabled field's value.
+func (s *DebugSession) SetSessionEnabled(v bool) *DebugSession {
+	s.SessionEnabled = &v
+	return s
+}
+
+// SetSessionTarget sets the SessionTarget field's value.
+func (s *DebugSession) SetSessionTarget(v string) *DebugSession {
+	s.SessionTarget = &v
 	return s
 }
 
@@ -6532,7 +6637,7 @@ type ListReportsForReportGroupOutput struct {
 	// returned.
 	NextToken *string `locationName:"nextToken" type:"string"`
 
-	// The list of returned report group ARNs.
+	// The list of report ARNs.
 	Reports []*string `locationName:"reports" min:"1" type:"list"`
 }
 
@@ -8124,6 +8229,11 @@ type ProjectSource struct {
 	// not get or set this information directly.
 	Auth *SourceAuth `locationName:"auth" type:"structure"`
 
+	// Contains information that defines how the build project reports the build
+	// status to the source provider. This option is only used when the source provider
+	// is GITHUB, GITHUB_ENTERPRISE, or BITBUCKET.
+	BuildStatusConfig *BuildStatusConfig `locationName:"buildStatusConfig" type:"structure"`
+
 	// The buildspec file declaration to use for the builds in this build project.
 	//
 	// If this value is set, it can be either an inline buildspec definition, the
@@ -8210,9 +8320,10 @@ type ProjectSource struct {
 	//    * CODEPIPELINE: The source code settings are specified in the source action
 	//    of a pipeline in AWS CodePipeline.
 	//
-	//    * GITHUB: The source code is in a GitHub repository.
+	//    * GITHUB: The source code is in a GitHub or GitHub Enterprise Cloud repository.
 	//
-	//    * GITHUB_ENTERPRISE: The source code is in a GitHub Enterprise repository.
+	//    * GITHUB_ENTERPRISE: The source code is in a GitHub Enterprise Server
+	//    repository.
 	//
 	//    * NO_SOURCE: The project does not have input source code.
 	//
@@ -8259,6 +8370,12 @@ func (s *ProjectSource) Validate() error {
 // SetAuth sets the Auth field's value.
 func (s *ProjectSource) SetAuth(v *SourceAuth) *ProjectSource {
 	s.Auth = v
+	return s
+}
+
+// SetBuildStatusConfig sets the BuildStatusConfig field's value.
+func (s *ProjectSource) SetBuildStatusConfig(v *BuildStatusConfig) *ProjectSource {
+	s.BuildStatusConfig = v
 	return s
 }
 
@@ -9189,6 +9306,11 @@ type StartBuildInput struct {
 	// ones already defined in the build project.
 	ArtifactsOverride *ProjectArtifacts `locationName:"artifactsOverride" type:"structure"`
 
+	// Contains information that defines how the build project reports the build
+	// status to the source provider. This option is only used when the source provider
+	// is GITHUB, GITHUB_ENTERPRISE, or BITBUCKET.
+	BuildStatusConfigOverride *BuildStatusConfig `locationName:"buildStatusConfigOverride" type:"structure"`
+
 	// A buildspec file declaration that overrides, for this build only, the latest
 	// one already defined in the build project.
 	//
@@ -9213,6 +9335,10 @@ type StartBuildInput struct {
 	// The name of a compute type for this build that overrides the one specified
 	// in the build project.
 	ComputeTypeOverride *string `locationName:"computeTypeOverride" type:"string" enum:"ComputeType"`
+
+	// Specifies if session debugging is enabled for this build. For more information,
+	// see Viewing a running build in Session Manager (https://docs.aws.amazon.com/codebuild/latest/userguide/session-manager.html).
+	DebugSessionEnabled *bool `locationName:"debugSessionEnabled" type:"boolean"`
 
 	// The AWS Key Management Service (AWS KMS) customer master key (CMK) that overrides
 	// the one specified in the build project. The CMK key encrypts the build output
@@ -9243,7 +9369,7 @@ type StartBuildInput struct {
 
 	// A unique, case sensitive identifier you provide to ensure the idempotency
 	// of the StartBuild request. The token is included in the StartBuild request
-	// and is valid for 12 hours. If you repeat the StartBuild request with the
+	// and is valid for 5 minutes. If you repeat the StartBuild request with the
 	// same token, but change a parameter, AWS CodeBuild returns a parameter mismatch
 	// error.
 	IdempotencyToken *string `locationName:"idempotencyToken" type:"string"`
@@ -9475,6 +9601,12 @@ func (s *StartBuildInput) SetArtifactsOverride(v *ProjectArtifacts) *StartBuildI
 	return s
 }
 
+// SetBuildStatusConfigOverride sets the BuildStatusConfigOverride field's value.
+func (s *StartBuildInput) SetBuildStatusConfigOverride(v *BuildStatusConfig) *StartBuildInput {
+	s.BuildStatusConfigOverride = v
+	return s
+}
+
 // SetBuildspecOverride sets the BuildspecOverride field's value.
 func (s *StartBuildInput) SetBuildspecOverride(v string) *StartBuildInput {
 	s.BuildspecOverride = &v
@@ -9496,6 +9628,12 @@ func (s *StartBuildInput) SetCertificateOverride(v string) *StartBuildInput {
 // SetComputeTypeOverride sets the ComputeTypeOverride field's value.
 func (s *StartBuildInput) SetComputeTypeOverride(v string) *StartBuildInput {
 	s.ComputeTypeOverride = &v
+	return s
+}
+
+// SetDebugSessionEnabled sets the DebugSessionEnabled field's value.
+func (s *StartBuildInput) SetDebugSessionEnabled(v bool) *StartBuildInput {
+	s.DebugSessionEnabled = &v
 	return s
 }
 
@@ -10667,8 +10805,8 @@ type WebhookFilter struct {
 	// Pattern is a required field
 	Pattern *string `locationName:"pattern" type:"string" required:"true"`
 
-	// The type of webhook filter. There are five webhook filter types: EVENT, ACTOR_ACCOUNT_ID,
-	// HEAD_REF, BASE_REF, and FILE_PATH.
+	// The type of webhook filter. There are six webhook filter types: EVENT, ACTOR_ACCOUNT_ID,
+	// HEAD_REF, BASE_REF, FILE_PATH, and COMMIT_MESSAGE.
 	//
 	// EVENT
 	//
@@ -10705,7 +10843,18 @@ type WebhookFilter struct {
 	// A webhook triggers a build when the path of a changed file matches the regular
 	// expression pattern.
 	//
-	// Works with GitHub and GitHub Enterprise push events only.
+	// Works with GitHub and Bitbucket events push and pull requests events. Also
+	// works with GitHub Enterprise push events, but does not work with GitHub Enterprise
+	// pull request events.
+	//
+	// COMMIT_MESSAGE
+	//
+	// A webhook triggers a build when the head commit message matches the regular
+	// expression pattern.
+	//
+	// Works with GitHub and Bitbucket events push and pull requests events. Also
+	// works with GitHub Enterprise push events, but does not work with GitHub Enterprise
+	// pull request events.
 	//
 	// Type is a required field
 	Type *string `locationName:"type" type:"string" required:"true" enum:"WebhookFilterType"`
@@ -10865,6 +11014,9 @@ const (
 
 	// EnvironmentTypeArmContainer is a EnvironmentType enum value
 	EnvironmentTypeArmContainer = "ARM_CONTAINER"
+
+	// EnvironmentTypeWindowsServer2019Container is a EnvironmentType enum value
+	EnvironmentTypeWindowsServer2019Container = "WINDOWS_SERVER_2019_CONTAINER"
 )
 
 const (

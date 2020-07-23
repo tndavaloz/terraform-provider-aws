@@ -4449,8 +4449,8 @@ type CachingConfig struct {
 
 	// The caching keys for a resolver that has caching enabled.
 	//
-	// Valid values are entries from the $context.identity and $context.arguments
-	// maps.
+	// Valid values are entries from the $context.arguments, $context.source, and
+	// $context.identity maps.
 	CachingKeys []*string `locationName:"cachingKeys" type:"list"`
 
 	// The TTL in seconds for a resolver that has caching enabled.
@@ -8585,7 +8585,7 @@ type RdsHttpEndpointConfig struct {
 	// Logical database name.
 	DatabaseName *string `locationName:"databaseName" type:"string"`
 
-	// Amazon RDS cluster identifier.
+	// Amazon RDS cluster ARN.
 	DbClusterIdentifier *string `locationName:"dbClusterIdentifier" type:"string"`
 
 	// Logical schema name.
@@ -10315,6 +10315,30 @@ const (
 
 	// ApiCacheTypeR48xlarge is a ApiCacheType enum value
 	ApiCacheTypeR48xlarge = "R4_8XLARGE"
+
+	// ApiCacheTypeSmall is a ApiCacheType enum value
+	ApiCacheTypeSmall = "SMALL"
+
+	// ApiCacheTypeMedium is a ApiCacheType enum value
+	ApiCacheTypeMedium = "MEDIUM"
+
+	// ApiCacheTypeLarge is a ApiCacheType enum value
+	ApiCacheTypeLarge = "LARGE"
+
+	// ApiCacheTypeXlarge is a ApiCacheType enum value
+	ApiCacheTypeXlarge = "XLARGE"
+
+	// ApiCacheTypeLarge2x is a ApiCacheType enum value
+	ApiCacheTypeLarge2x = "LARGE_2X"
+
+	// ApiCacheTypeLarge4x is a ApiCacheType enum value
+	ApiCacheTypeLarge4x = "LARGE_4X"
+
+	// ApiCacheTypeLarge8x is a ApiCacheType enum value
+	ApiCacheTypeLarge8x = "LARGE_8X"
+
+	// ApiCacheTypeLarge12x is a ApiCacheType enum value
+	ApiCacheTypeLarge12x = "LARGE_12X"
 )
 
 const (
