@@ -93,7 +93,8 @@ func resourceAwsWafv2WebACLLoggingConfiguration() *schema.Resource {
 						"uri_path": wafv2EmptySchema(),
 					},
 				},
-				Description: "Parts of the request to exclude from logs",
+				Description:      "Parts of the request to exclude from logs",
+				DiffSuppressFunc: suppressEquivalentRedactedFields,
 			},
 			"resource_arn": {
 				Type:         schema.TypeString,
@@ -104,6 +105,61 @@ func resourceAwsWafv2WebACLLoggingConfiguration() *schema.Resource {
 			},
 		},
 	}
+}
+
+// suppressEquivalentRedactedFields is required to
+// handle shifts in List ordering returned from the API
+func suppressEquivalentRedactedFields(k, old, new string, d *schema.ResourceData) bool {
+	o, n := d.GetChange("redacted_fields")
+	if o != nil && n != nil {
+		oldFields := o.([]interface{})
+		newFields := n.([]interface{})
+		if len(oldFields) != len(newFields) {
+			return false
+		}
+
+		for _, oldField := range oldFields {
+			om := oldField.(map[string]interface{})
+			found := false
+			for _, newField := range newFields {
+				nm := newField.(map[string]interface{})
+				if len(om) != len(nm) {
+					continue
+				}
+				for k, newVal := range nm {
+					if oldVal, ok := om[k]; ok {
+						if k == "method" || k == "query_string" || k == "uri_path" {
+							if len(oldVal.([]interface{})) == len(newVal.([]interface{})) {
+								found = true
+								break
+							}
+						} else if k == "single_header" {
+							oldHeader := oldVal.([]interface{})
+							newHeader := newVal.([]interface{})
+							if len(oldHeader) > 0 && oldHeader[0] != nil {
+								if len(newHeader) > 0 && newHeader[0] != nil {
+									oldName := oldVal.([]interface{})[0].(map[string]interface{})["name"].(string)
+									newName := newVal.([]interface{})[0].(map[string]interface{})["name"].(string)
+									if oldName == newName {
+										found = true
+										break
+									}
+								}
+							}
+						}
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if !found {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func resourceAwsWafv2WebACLLoggingConfigurationPut(d *schema.ResourceData, meta interface{}) error {

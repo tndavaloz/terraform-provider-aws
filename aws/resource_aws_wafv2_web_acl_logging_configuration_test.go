@@ -223,6 +223,54 @@ func TestAccAwsWafv2WebACLLoggingConfiguration_updateUriPathRedactedField(t *tes
 	})
 }
 
+// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/14248
+func TestAccAwsWafv2WebACLLoggingConfiguration_updateMultipleRedactedFields(t *testing.T) {
+	var v wafv2.LoggingConfiguration
+	rName := acctest.RandomWithPrefix("tf-acc-test")
+	resourceName := "aws_wafv2_web_acl_logging_configuration.test"
+	webACLResourceName := "aws_wafv2_web_acl.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckAwsWafv2WebACLLoggingConfigurationDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccAwsWafv2WebACLLoggingConfiguration_updateRedactedField(rName, "uri_path"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAwsWafv2WebACLLoggingConfigurationExists(resourceName, &v),
+					resource.TestCheckResourceAttrPair(resourceName, "resource_arn", webACLResourceName, "arn"),
+					resource.TestCheckResourceAttr(resourceName, "log_destination_configs.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "redacted_fields.#", "1"),
+					tfawsresource.TestCheckTypeSetElemNestedAttrs(resourceName, "redacted_fields.*", map[string]string{
+						"uri_path.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccAwsWafv2WebACLLoggingConfiguration_updateTwoRedactedFields(rName, "uri_path", "method"),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckAwsWafv2WebACLLoggingConfigurationExists(resourceName, &v),
+					resource.TestCheckResourceAttrPair(resourceName, "resource_arn", webACLResourceName, "arn"),
+					resource.TestCheckResourceAttr(resourceName, "log_destination_configs.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "redacted_fields.#", "2"),
+					tfawsresource.TestCheckTypeSetElemNestedAttrs(resourceName, "redacted_fields.*", map[string]string{
+						"uri_path.#": "1",
+					}),
+					tfawsresource.TestCheckTypeSetElemNestedAttrs(resourceName, "redacted_fields.*", map[string]string{
+						"method.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAwsWafv2WebACLLoggingConfiguration_changeResourceARNForceNew(t *testing.T) {
 	var before, after wafv2.LoggingConfiguration
 	rName := acctest.RandomWithPrefix("tf-acc-test")
@@ -557,7 +605,7 @@ const testAccWebACLLoggingConfigurationResource_emptyRedactedFieldsConfig = `
 resource "aws_wafv2_web_acl_logging_configuration" "test" {
   resource_arn            = aws_wafv2_web_acl.test.arn
   log_destination_configs = [aws_kinesis_firehose_delivery_stream.test.arn]
-  redacted_fields         = {}
+  redacted_fields {}
 }
 `
 
@@ -606,6 +654,23 @@ resource "aws_wafv2_web_acl_logging_configuration" "test" {
 `, field)
 }
 
+func testAccWebACLLoggingConfigurationResource_updateTwoRedactedFieldsConfig(field1, field2 string) string {
+	return fmt.Sprintf(`
+resource "aws_wafv2_web_acl_logging_configuration" "test" {
+  resource_arn            = aws_wafv2_web_acl.test.arn
+  log_destination_configs = [aws_kinesis_firehose_delivery_stream.test.arn]
+
+  redacted_fields {
+    %s {}
+  }
+
+  redacted_fields {
+    %s {}
+  }
+}
+`, field1, field2)
+}
+
 func testAccAwsWafv2WebACLLoggingConfiguration_basic(rName string) string {
 	return composeConfig(
 		testAccWebACLLoggingConfigurationDependenciesConfig(rName),
@@ -639,6 +704,13 @@ func testAccAwsWafv2WebACLLoggingConfiguration_updateRedactedField(rName, field 
 		testAccWebACLLoggingConfigurationDependenciesConfig(rName),
 		testAccWebACLLoggingConfigurationKinesisDependencyConfig(rName),
 		testAccWebACLLoggingConfigurationResource_updateRedactedFieldConfig(field))
+}
+
+func testAccAwsWafv2WebACLLoggingConfiguration_updateTwoRedactedFields(rName, field1, field2 string) string {
+	return composeConfig(
+		testAccWebACLLoggingConfigurationDependenciesConfig(rName),
+		testAccWebACLLoggingConfigurationKinesisDependencyConfig(rName),
+		testAccWebACLLoggingConfigurationResource_updateTwoRedactedFieldsConfig(field1, field2))
 }
 
 func testAccAwsWafv2WebACLLoggingConfiguration_emptyRedactedField(rName string) string {
