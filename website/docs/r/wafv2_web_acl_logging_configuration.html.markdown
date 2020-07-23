@@ -38,12 +38,14 @@ The following arguments are supported:
 
 The `redacted_fields` block supports the following arguments:
 
-* `all_query_arguments` - (Optional) Inspect all query arguments.
-* `body` - (Optional) Inspect the request body, which immediately follows the request headers.
+~> **NOTE:** Only one of `method`, `query_string`, `single_header` or `uri_path` can be specified.
+
+* `all_query_arguments` - (Optional, **DEPRECATED**) Inspect all query arguments.
+* `body` - (Optional, **DEPRECATED**) Inspect the request body, which immediately follows the request headers.
 * `method` - (Optional) Inspect the HTTP method. The method indicates the type of operation that the request is asking the origin to perform.
 * `query_string` - (Optional) Inspect the query string. This is the part of a URL that appears after a `?` character, if any.
 * `single_header` - (Optional) Inspect a single header. See [Single Header](#single-header) below for details.
-* `single_query_argument` - (Optional) Inspect a single query argument. See [Single Query Argument](#single-query-argument) below for details.
+* `single_query_argument` - (Optional, **DEPRECATED**) Inspect a single query argument. See [Single Query Argument](#single-query-argument) below for details.
 * `uri_path` - (Optional) Inspect the request URI path. This is the part of a web request that identifies a resource, for example, `/images/daily-ad.jpg`.
 
 ### Single Header
@@ -54,7 +56,7 @@ The `single_header` block supports the following arguments:
 
 * `name` - (Optional) The name of the query header to inspect. This setting must be provided as lower case characters.
 
-### Single Query Argument
+### Single Query Argument (**DEPRECATED**)
 
 Inspect a single query argument. Provide the name of the query argument to inspect, such as `UserName` or `SalesRegion` (provided as lowercase strings).
 

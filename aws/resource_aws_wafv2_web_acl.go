@@ -147,9 +147,15 @@ func resourceAwsWafv2WebACLCreate(d *schema.ResourceData, meta interface{}) erro
 		Name:             aws.String(d.Get("name").(string)),
 		Scope:            aws.String(d.Get("scope").(string)),
 		DefaultAction:    expandWafv2DefaultAction(d.Get("default_action").([]interface{})),
-		Rules:            expandWafv2WebACLRules(d.Get("rule").(*schema.Set).List()),
 		VisibilityConfig: expandWafv2VisibilityConfig(d.Get("visibility_config").([]interface{})),
 	}
+
+	rules, err := expandWafv2WebACLRules(d.Get("rule").(*schema.Set).List())
+	if err != nil {
+		return err
+	}
+
+	params.Rules = rules
 
 	if v, ok := d.GetOk("description"); ok {
 		params.Description = aws.String(v.(string))
@@ -159,7 +165,7 @@ func resourceAwsWafv2WebACLCreate(d *schema.ResourceData, meta interface{}) erro
 		params.Tags = keyvaluetags.New(v).IgnoreAws().Wafv2Tags()
 	}
 
-	err := resource.Retry(Wafv2WebACLCreateTimeout, func() *resource.RetryError {
+	err = resource.Retry(Wafv2WebACLCreateTimeout, func() *resource.RetryError {
 		var err error
 		resp, err = conn.CreateWebACL(params)
 		if err != nil {
@@ -253,15 +259,21 @@ func resourceAwsWafv2WebACLUpdate(d *schema.ResourceData, meta interface{}) erro
 			Scope:            aws.String(d.Get("scope").(string)),
 			LockToken:        aws.String(d.Get("lock_token").(string)),
 			DefaultAction:    expandWafv2DefaultAction(d.Get("default_action").([]interface{})),
-			Rules:            expandWafv2Rules(d.Get("rule").(*schema.Set).List()),
 			VisibilityConfig: expandWafv2VisibilityConfig(d.Get("visibility_config").([]interface{})),
 		}
+
+		rules, err := expandWafv2Rules(d.Get("rule").(*schema.Set).List())
+		if err != nil {
+			return err
+		}
+
+		u.Rules = rules
 
 		if v, ok := d.GetOk("description"); ok && len(v.(string)) > 0 {
 			u.Description = aws.String(v.(string))
 		}
 
-		err := resource.Retry(Wafv2WebACLUpdateTimeout, func() *resource.RetryError {
+		err = resource.Retry(Wafv2WebACLUpdateTimeout, func() *resource.RetryError {
 			_, err := conn.UpdateWebACL(u)
 			if err != nil {
 				if isAWSErr(err, wafv2.ErrCodeWAFUnavailableEntityException, "") {
@@ -462,9 +474,9 @@ func wafv2RuleGroupReferenceStatementSchema() *schema.Schema {
 	}
 }
 
-func expandWafv2WebACLRules(l []interface{}) []*wafv2.Rule {
+func expandWafv2WebACLRules(l []interface{}) ([]*wafv2.Rule, error) {
 	if len(l) == 0 || l[0] == nil {
-		return nil
+		return nil, nil
 	}
 
 	rules := make([]*wafv2.Rule, 0)
@@ -473,25 +485,38 @@ func expandWafv2WebACLRules(l []interface{}) []*wafv2.Rule {
 		if rule == nil {
 			continue
 		}
-		rules = append(rules, expandWafv2WebACLRule(rule.(map[string]interface{})))
+		r, err := expandWafv2WebACLRule(rule.(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, r)
 	}
 
-	return rules
+	return rules, nil
 }
 
-func expandWafv2WebACLRule(m map[string]interface{}) *wafv2.Rule {
+func expandWafv2WebACLRule(m map[string]interface{}) (*wafv2.Rule, error) {
 	if m == nil {
-		return nil
+		return nil, nil
 	}
 
-	return &wafv2.Rule{
+	rule := &wafv2.Rule{
 		Name:             aws.String(m["name"].(string)),
 		Priority:         aws.Int64(int64(m["priority"].(int))),
 		Action:           expandWafv2RuleAction(m["action"].([]interface{})),
 		OverrideAction:   expandWafv2OverrideAction(m["override_action"].([]interface{})),
-		Statement:        expandWafv2WebACLRootStatement(m["statement"].([]interface{})),
 		VisibilityConfig: expandWafv2VisibilityConfig(m["visibility_config"].([]interface{})),
 	}
+
+	s, err := expandWafv2WebACLRootStatement(m["statement"].([]interface{}))
+	if err != nil {
+		return nil, err
+	}
+
+	rule.Statement = s
+
+	return rule, nil
+
 }
 
 func expandWafv2OverrideAction(l []interface{}) *wafv2.OverrideAction {
@@ -532,9 +557,9 @@ func expandWafv2DefaultAction(l []interface{}) *wafv2.DefaultAction {
 	return action
 }
 
-func expandWafv2WebACLRootStatement(l []interface{}) *wafv2.Statement {
+func expandWafv2WebACLRootStatement(l []interface{}) (*wafv2.Statement, error) {
 	if len(l) == 0 || l[0] == nil {
-		return nil
+		return nil, nil
 	}
 
 	m := l[0].(map[string]interface{})
@@ -542,19 +567,27 @@ func expandWafv2WebACLRootStatement(l []interface{}) *wafv2.Statement {
 	return expandWafv2WebACLStatement(m)
 }
 
-func expandWafv2WebACLStatement(m map[string]interface{}) *wafv2.Statement {
+func expandWafv2WebACLStatement(m map[string]interface{}) (*wafv2.Statement, error) {
 	if m == nil {
-		return nil
+		return nil, nil
 	}
 
 	statement := &wafv2.Statement{}
 
 	if v, ok := m["and_statement"]; ok {
-		statement.AndStatement = expandWafv2AndStatement(v.([]interface{}))
+		s, err := expandWafv2AndStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.AndStatement = s
 	}
 
 	if v, ok := m["byte_match_statement"]; ok {
-		statement.ByteMatchStatement = expandWafv2ByteMatchStatement(v.([]interface{}))
+		s, err := expandWafv2ByteMatchStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.ByteMatchStatement = s
 	}
 
 	if v, ok := m["ip_set_reference_statement"]; ok {
@@ -570,19 +603,35 @@ func expandWafv2WebACLStatement(m map[string]interface{}) *wafv2.Statement {
 	}
 
 	if v, ok := m["not_statement"]; ok {
-		statement.NotStatement = expandWafv2NotStatement(v.([]interface{}))
+		s, err := expandWafv2NotStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.NotStatement = s
 	}
 
 	if v, ok := m["or_statement"]; ok {
-		statement.OrStatement = expandWafv2OrStatement(v.([]interface{}))
+		s, err := expandWafv2OrStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.OrStatement = s
 	}
 
 	if v, ok := m["rate_based_statement"]; ok {
-		statement.RateBasedStatement = expandWafv2RateBasedStatement(v.([]interface{}))
+		s, err := expandWafv2RateBasedStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.RateBasedStatement = s
 	}
 
 	if v, ok := m["regex_pattern_set_reference_statement"]; ok {
-		statement.RegexPatternSetReferenceStatement = expandWafv2RegexPatternSetReferenceStatement(v.([]interface{}))
+		s, err := expandWafv2RegexPatternSetReferenceStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.RegexPatternSetReferenceStatement = s
 	}
 
 	if v, ok := m["rule_group_reference_statement"]; ok {
@@ -590,18 +639,30 @@ func expandWafv2WebACLStatement(m map[string]interface{}) *wafv2.Statement {
 	}
 
 	if v, ok := m["size_constraint_statement"]; ok {
-		statement.SizeConstraintStatement = expandWafv2SizeConstraintStatement(v.([]interface{}))
+		s, err := expandWafv2SizeConstraintStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.SizeConstraintStatement = s
 	}
 
 	if v, ok := m["sqli_match_statement"]; ok {
-		statement.SqliMatchStatement = expandWafv2SqliMatchStatement(v.([]interface{}))
+		s, err := expandWafv2SqliMatchStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.SqliMatchStatement = s
 	}
 
 	if v, ok := m["xss_match_statement"]; ok {
-		statement.XssMatchStatement = expandWafv2XssMatchStatement(v.([]interface{}))
+		s, err := expandWafv2XssMatchStatement(v.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		statement.XssMatchStatement = s
 	}
 
-	return statement
+	return statement, nil
 }
 
 func expandWafv2ManagedRuleGroupStatement(l []interface{}) *wafv2.ManagedRuleGroupStatement {
@@ -617,9 +678,9 @@ func expandWafv2ManagedRuleGroupStatement(l []interface{}) *wafv2.ManagedRuleGro
 	}
 }
 
-func expandWafv2RateBasedStatement(l []interface{}) *wafv2.RateBasedStatement {
+func expandWafv2RateBasedStatement(l []interface{}) (*wafv2.RateBasedStatement, error) {
 	if len(l) == 0 || l[0] == nil {
-		return nil
+		return nil, nil
 	}
 
 	m := l[0].(map[string]interface{})
@@ -630,10 +691,14 @@ func expandWafv2RateBasedStatement(l []interface{}) *wafv2.RateBasedStatement {
 
 	s := m["scope_down_statement"].([]interface{})
 	if len(s) > 0 && s[0] != nil {
-		r.ScopeDownStatement = expandWafv2Statement(s[0].(map[string]interface{}))
+		scopeDownStatement, err := expandWafv2Statement(s[0].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		r.ScopeDownStatement = scopeDownStatement
 	}
 
-	return r
+	return r, nil
 }
 
 func expandWafv2RuleGroupReferenceStatement(l []interface{}) *wafv2.RuleGroupReferenceStatement {
